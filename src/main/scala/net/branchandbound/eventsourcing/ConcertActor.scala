@@ -7,30 +7,28 @@ import akka.persistence.SnapshotOffer
 import akka.actor.Props
 
 object ConcertActor {
+  import ConcertProtocol._
+  
   sealed trait Command
   case class BuyTickets(user: String, quantity: Int) extends Command
   case class ChangePrice(newPrice: Int) extends Command
-  case class ChangeCapacity(newCapacity: Int) extends Command
+  case class AddCapacity(newCapacity: Int) extends Command
   case class CreateConcert(price: Int, available: Int, startTime: Date) extends Command
   
   sealed trait CommandResponse
-  case object SoldOut extends CommandResponse
+  case object TicketsSoldOut extends CommandResponse
   case object Success extends CommandResponse
   
   sealed trait Query
   case object GetSalesRecords extends Query
   
-  sealed trait Event
-  case class ConcertCreated(price: Int, available: Int, startTime: Date)
-  case class SoldOut(user: String) extends Event
-  case class TicketsBought(user: String, quantity: Int) extends Event
-  
-  
   case class ConcertState(price: Int, available: Int, startTime: Date, sales: Seq[SalesRecord] = Nil) {
     def updated(evt: Event): ConcertState = evt match {
-      case TicketsBought(user, quant)  => copy(price, available - quant, startTime, 
-                                            SalesRecord(user, quant, price) +: sales)
-      case SoldOut(user)               => this                                         
+      case TicketsBought(user, quant)   => copy(price, available - quant, startTime, 
+                                             SalesRecord(user, quant, price) +: sales)
+      case PriceChanged(newPrice)       => copy(price = newPrice, available, startTime, sales)
+      case CapacityIncreased(toBeAdded) => copy(price, available = available + toBeAdded, startTime, sales)
+      case _                            => this                                         
     }
   }
   case class SalesRecord(user: String, quantity: Int, price: Int)
@@ -42,20 +40,24 @@ object ConcertActor {
 class ConcertActor(id: String) extends PersistentActor with ActorLogging {
   
   import ConcertActor._
+  import ConcertProtocol._
   
   def persistenceId = "Concert." + id
   
-  var state: ConcertState = null
-  def updateState(evt: Event) = state = state.updated(evt)
+  var state: Option[ConcertState] = None
+  def updateState(evt: Event) = state = state.map(_.updated(evt))
   def setInitialState(evt: ConcertCreated) = {
-    state = ConcertState(evt.price, evt.available, evt.startTime)
+    state = Some(ConcertState(evt.price, evt.available, evt.startTime))
     context.become(receiveCommands)
   }
   
   val receiveRecover: Receive = {
     case evt: ConcertCreated                      => setInitialState(evt)
     case evt: Event                               => updateState(evt)
-    case SnapshotOffer(_, snapshot: ConcertState) => state = snapshot
+    case SnapshotOffer(_, snapshot: ConcertState) => {
+      state = Some(snapshot)
+      context.become(receiveCommands)
+    }
   }
 
   val receiveCreate: Receive = {
@@ -66,7 +68,7 @@ class ConcertActor(id: String) extends PersistentActor with ActorLogging {
   }
   
   val receiveCommands: Receive = {
-    case BuyTickets(user, quant) if quant <= state.available => {
+    case BuyTickets(user, quant) if quant <= state.get.available => {
       log.info(s"Current state: $state")
       persist(TicketsBought(user, quant))(evt =>{
         updateState(evt)
@@ -77,13 +79,22 @@ class ConcertActor(id: String) extends PersistentActor with ActorLogging {
       log.warning("Sold out!")
       persist(SoldOut(user))(evt => {
         updateState(evt)
-        sender() ! SoldOut
+        sender() ! TicketsSoldOut
       })
     }
+    case ChangePrice(newPrice)                       => {
+      log.info(s"Price changed to $newPrice")
+      persist(PriceChanged(newPrice))(evt => updateState(evt))
+    }
+    case AddCapacity(toBeAdded)                       => {
+      log.info(s"Capacity increased with $toBeAdded")
+      persist(CapacityIncreased(toBeAdded))(evt => updateState(evt))
+    }
     
+      
     // Queries
     case GetSalesRecords                               => {
-      sender() ! state.sales
+      sender() ! state.get.sales
     }
   }
   
