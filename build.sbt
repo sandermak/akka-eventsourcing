@@ -1,4 +1,4 @@
-val akkaVersion = "2.3.4"
+val akkaVersion = "2.3.5"
 
 resolvers += "krasserm at bintray" at "http://dl.bintray.com/krasserm/maven"
 

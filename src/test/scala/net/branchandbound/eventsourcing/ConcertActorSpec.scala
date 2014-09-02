@@ -31,7 +31,7 @@ class ConcertActorSpec(_system: ActorSystem) extends TestKit(_system) with Impli
 
       s"received '$getSalesCmd'" should {
         s"return empty list of sales" in {
-          val concertActor = _system.actorOf(ConcertActor.props("1", 1, 10, new Date))
+          val concertActor = _system.actorOf(ConcertActor.props("1"))
           concertActor ! getSalesCmd
 
           expectMsg(List())
@@ -41,7 +41,7 @@ class ConcertActorSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       val buyCmd = BuyTickets("me", 1)
       s"received '$buyCmd'" should {
         s"return Success" in {
-          val concertActor = _system.actorOf(ConcertActor.props("1", 1, 10, new Date))
+          val concertActor = _system.actorOf(ConcertActor.props("1"))
           concertActor ! buyCmd
 
           expectMsg(Success)
@@ -50,7 +50,7 @@ class ConcertActorSpec(_system: ActorSystem) extends TestKit(_system) with Impli
 
       s"received '$buyCmd' and then '$getSalesCmd'" should {
         s"return empty list of sales" in {
-          val concertActor = _system.actorOf(ConcertActor.props("2", 1, 10, new Date))
+          val concertActor = _system.actorOf(ConcertActor.props("2"))
           concertActor ! buyCmd
           concertActor ! getSalesCmd
           
@@ -62,7 +62,7 @@ class ConcertActorSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       val buyTooMuchCmd = BuyTickets("me", 100)
       s"received '$buyTooMuchCmd'" should {
         s"return Success" in {
-          val concertActor = _system.actorOf(ConcertActor.props("3", 1, 50, new Date))
+          val concertActor = _system.actorOf(ConcertActor.props("3"))
           concertActor ! buyTooMuchCmd
 
           expectMsg(SoldOut)
