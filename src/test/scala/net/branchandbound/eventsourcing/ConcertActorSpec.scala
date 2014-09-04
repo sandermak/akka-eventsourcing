@@ -29,7 +29,7 @@ class ConcertActorSpec(_system: ActorSystem) extends TestKit(_system) with Impli
    "A ConcertActor" when {
       val getSalesCmd = GetSalesRecords
 
-      s"received '$getSalesCmd'" should {
+      s"receiving '$getSalesCmd'" should {
         s"return empty list of sales" in {
           val concertActor = _system.actorOf(ConcertActor.props("1"))
           concertActor ! CreateConcert(10, 100, new Date)
@@ -40,7 +40,7 @@ class ConcertActorSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       }
       
       val buyCmd = BuyTickets("me", 1)
-      s"received '$buyCmd'" should {
+      s"receiving '$buyCmd'" should {
         s"return Success" in {
           val concertActor = _system.actorOf(ConcertActor.props("1"))
           concertActor ! buyCmd
@@ -49,7 +49,7 @@ class ConcertActorSpec(_system: ActorSystem) extends TestKit(_system) with Impli
         }
       }
 
-      s"received '$buyCmd' and then '$getSalesCmd'" should {
+      s"receiving '$buyCmd' and then '$getSalesCmd'" should {
         s"return non-empty list of sales" in {
           val concertActor = _system.actorOf(ConcertActor.props("2"))
           concertActor ! CreateConcert(1, 100, new Date)
@@ -62,7 +62,7 @@ class ConcertActorSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       }     
       
       val buyTooMuchCmd = BuyTickets("me", 100)
-      s"received '$buyTooMuchCmd'" should {
+      s"receiving '$buyTooMuchCmd'" should {
         s"return Success" in {
           val concertActor = _system.actorOf(ConcertActor.props("3"))
           concertActor ! CreateConcert(1, 1, new Date)

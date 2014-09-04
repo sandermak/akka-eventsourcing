@@ -23,7 +23,7 @@ object ConcertActor {
   case object GetSalesRecords extends Query
   
   case class ConcertState(price: Int, available: Int, startTime: Date, sales: Seq[SalesRecord] = Nil) {
-    def updated(evt: Event): ConcertState = evt match {
+    def updated(evt: ConcertEvent): ConcertState = evt match {
       case TicketsBought(user, quant)   => copy(price, available - quant, startTime, 
                                              SalesRecord(user, quant, price) +: sales)
       case PriceChanged(newPrice)       => copy(price = newPrice, available, startTime, sales)
@@ -45,7 +45,7 @@ class ConcertActor(id: String) extends PersistentActor with ActorLogging {
   def persistenceId = "Concert." + id
   
   var state: Option[ConcertState] = None
-  def updateState(evt: Event) = state = state.map(_.updated(evt))
+  def updateState(evt: ConcertEvent) = state = state.map(_.updated(evt))
   def setInitialState(evt: ConcertCreated) = {
     state = Some(ConcertState(evt.price, evt.available, evt.startTime))
     context.become(receiveCommands)
@@ -53,7 +53,7 @@ class ConcertActor(id: String) extends PersistentActor with ActorLogging {
   
   val receiveRecover: Receive = {
     case evt: ConcertCreated                      => setInitialState(evt)
-    case evt: Event                               => updateState(evt)
+    case evt: ConcertEvent                        => updateState(evt)
     case SnapshotOffer(_, snapshot: ConcertState) => {
       state = Some(snapshot)
       context.become(receiveCommands)
