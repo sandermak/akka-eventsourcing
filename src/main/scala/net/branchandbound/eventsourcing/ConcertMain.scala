@@ -25,15 +25,18 @@ object ConcertMain extends App {
 
   concertActor ! CreateConcert(50, 100, new Date)
   concertActor ! BuyTickets("me", 50)
-
-  implicit val timeout = Timeout(5 seconds)
+  concertActor ! ChangePrice(75)
   
+  // Retrieve and print the SalesRecords from ConcertActor
+  implicit val timeout = Timeout(5 seconds)
   val salesRecordsFuture = concertActor ? GetSalesRecords
   val salesRecords = Await.result(salesRecordsFuture, timeout.duration)
   println(s"Answer from ConcertActor: $salesRecords")
   
-  concertActor ! ChangePrice(75)
+  // Since PersistenView polls (eventual consistency) we force it to sync with the journal for our demo
   concertHistoryActor ! Update(await = true)
+  
+  // Retrieve and print the ConcertHistory
   val historyFuture = concertHistoryActor ? GetConcertHistory
   val history = Await.result(historyFuture, timeout.duration)
   println(s"Answer from ConcertHistoryView: $history")

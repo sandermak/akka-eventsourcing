@@ -1,24 +1,25 @@
 package net.branchandbound.eventsourcing
 
-import akka.persistence.PersistentView
 import akka.actor.Props
+import akka.persistence.PersistentView
+import collection.immutable.ListSet
 
 object ConcertHistoryView {
   import ConcertProtocol._
   
-  case class ConcertHistoryState(priceHistory: Seq[Int] = Nil, 
+  case class ConcertHistoryState(priceHistory: ListSet[Int] = ListSet.empty, 
                                  ticketsPerPrice: Map[Int, Int] = Map.empty.withDefaultValue(0), 
                                  soldOuts: Int = 0) {
     
     def updated(evt: ConcertEvent): ConcertHistoryState = evt match {
-      case ConcertCreated(price, _, _) => copy(priceHistory :+ price, ticketsPerPrice, soldOuts)
+      case ConcertCreated(price, _, _) => copy(priceHistory + price, ticketsPerPrice, soldOuts)
       case SoldOut(_)                  => copy(priceHistory, ticketsPerPrice, soldOuts + 1) 
       case TicketsBought(_, quantity)  => {
-        val currentPrice = priceHistory.last 
+        val currentPrice = priceHistory.head 
         val newTicketsPerPrice = ticketsPerPrice.updated(currentPrice, ticketsPerPrice(currentPrice) + quantity)
         copy(priceHistory, newTicketsPerPrice, soldOuts)
       }
-      case PriceChanged(newPrice)      => copy(priceHistory :+  newPrice, ticketsPerPrice, soldOuts)
+      case PriceChanged(newPrice)      => copy(priceHistory + newPrice, ticketsPerPrice, soldOuts)
       case CapacityIncreased(_)        => this
     }
   }
