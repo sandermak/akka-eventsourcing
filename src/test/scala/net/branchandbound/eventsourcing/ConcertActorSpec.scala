@@ -8,6 +8,8 @@ import akka.testkit.ImplicitSender
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.WordSpecLike
 import java.util.Date
+import net.branchandbound.eventsourcing.ConcertProtocol.TicketsBought
+import net.branchandbound.eventsourcing.ConcertProtocol.SoldOut
 
 class ConcertActorSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender with WordSpecLike with Matchers with BeforeAndAfterAll {
   def this() = this(
@@ -45,7 +47,7 @@ class ConcertActorSpec(_system: ActorSystem) extends TestKit(_system) with Impli
           val concertActor = _system.actorOf(ConcertActor.props("1"))
           concertActor ! buyCmd
 
-          expectMsg(Success)
+          expectMsg(TicketsBought("me", 1))
         }
       }
 
@@ -56,7 +58,7 @@ class ConcertActorSpec(_system: ActorSystem) extends TestKit(_system) with Impli
           concertActor ! buyCmd
           concertActor ! getSalesCmd
           
-          expectMsg(Success)
+          expectMsg(TicketsBought("me", 1))
           expectMsg(Seq(SalesRecord("me", 1, 1)))
         }
       }     
@@ -68,7 +70,7 @@ class ConcertActorSpec(_system: ActorSystem) extends TestKit(_system) with Impli
           concertActor ! CreateConcert(1, 1, new Date)
           concertActor ! buyTooMuchCmd
 
-          expectMsg(TicketsSoldOut)
+          expectMsg(SoldOut("me"))
         }
       }
       

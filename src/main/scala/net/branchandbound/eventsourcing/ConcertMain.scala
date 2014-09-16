@@ -33,7 +33,8 @@ object ConcertMain extends App {
   val salesRecords = Await.result(salesRecordsFuture, timeout.duration)
   println(s"Answer from ConcertActor: $salesRecords")
   
-  // Since PersistenView polls (eventual consistency) we force it to sync with the journal for our demo
+  // Since PersistenView polls (eventual consistency) we force it 
+  // to sync with the journal for our demo
   concertHistoryActor ! Update(await = true)
   
   // Retrieve and print the ConcertHistory

@@ -15,10 +15,6 @@ object ConcertActor {
   case class AddCapacity(newCapacity: Int) extends Command
   case class CreateConcert(price: Int, available: Int, startTime: Date) extends Command
   
-  sealed trait CommandResponse
-  case object TicketsSoldOut extends CommandResponse
-  case object Success extends CommandResponse
-  
   sealed trait Query
   case object GetSalesRecords extends Query
   
@@ -72,14 +68,14 @@ class ConcertActor(id: String) extends PersistentActor with ActorLogging {
       log.info(s"Current state: $state")
       persist(TicketsBought(user, quant))(evt =>{
         updateState(evt)
-        sender() ! Success
+        sender() ! evt
       });
     }
     case BuyTickets(user, _)                                 => {
       log.warning("Sold out!")
       persist(SoldOut(user))(evt => {
         updateState(evt)
-        sender() ! TicketsSoldOut
+        sender() ! evt
       })
     }
     case ChangePrice(newPrice)                       => {
