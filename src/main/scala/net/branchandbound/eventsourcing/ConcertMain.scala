@@ -23,15 +23,22 @@ object ConcertMain extends App {
   val concertActor = system.actorOf(ConcertActor.props("concert1"), "concert1Actor")
   val concertHistoryActor = system.actorOf(ConcertHistoryView.props("concert1"), "concert1HistoryView")
 
-  concertActor ! CreateConcert(50, 100, new Date)
-  concertActor ! BuyTickets("me", 50)
-  concertActor ! ChangePrice(75)
+  val create = CreateConcert(50, 100, new Date)
+  val buy = BuyTickets("me", 50)
+  val change = ChangePrice(75)
+  concertActor ! create
+  println(s"------- ConcertActor -----> $create")
+  concertActor ! buy
+  println(s"------- ConcertActor -----> $buy")
+  concertActor ! change
+  println(s"------- ConcertActor -----> $change")
   
   // Retrieve and print the SalesRecords from ConcertActor
   implicit val timeout = Timeout(5 seconds)
   val salesRecordsFuture = concertActor ? GetSalesRecords
+  println(s"------- ConcertActor -----> $GetSalesRecords")
   val salesRecords = Await.result(salesRecordsFuture, timeout.duration)
-  println(s"Answer from ConcertActor: $salesRecords")
+  println(s"<------ ConcertActor ------ $salesRecords")
   
   // Since PersistenView polls (eventual consistency) we force it 
   // to sync with the journal for our demo
@@ -39,8 +46,10 @@ object ConcertMain extends App {
   
   // Retrieve and print the ConcertHistory
   val historyFuture = concertHistoryActor ? GetConcertHistory
+  println(s"---- ConcertHistoryView ---> GetConcertHistory")
   val history = Await.result(historyFuture, timeout.duration)
   println(s"Answer from ConcertHistoryView: $history")
+  println(s"<--- ConcertHistoryView ---- history")
   
   system.shutdown()
 }

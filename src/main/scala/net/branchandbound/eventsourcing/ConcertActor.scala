@@ -58,33 +58,41 @@ class ConcertActor(id: String) extends PersistentActor with ActorLogging {
 
   val receiveCreate: Receive = {
     case c@CreateConcert(price, available, startTime)        => {
-      log.info(s"Creating concert with $c")
-      persist(ConcertCreated(price, available, startTime))(setInitialState(_))
+      persist(ConcertCreated(price, available, startTime)) { evt =>
+        println(s"Creating concert with from message $c")
+        setInitialState(evt)
+      }
     }
   }
   
   val receiveCommands: Receive = {
     case BuyTickets(user, quant) if quant <= state.get.available => {
-      log.info(s"Current state: $state")
       persist(TicketsBought(user, quant))(evt =>{
+        println(s"Selling $quant tickets to '$user'")
         updateState(evt)
         sender() ! evt
       });
     }
     case BuyTickets(user, _)                                 => {
-      log.warning("Sold out!")
       persist(SoldOut(user))(evt => {
+        println("Sold out!")
         updateState(evt)
         sender() ! evt
       })
     }
     case ChangePrice(newPrice)                       => {
-      log.info(s"Price changed to $newPrice")
-      persist(PriceChanged(newPrice))(evt => updateState(evt))
+      persist(PriceChanged(newPrice)){
+        println(s"Price changed to $newPrice")
+        evt => updateState(evt)
+        sender() ! evt
+      }
     }
     case AddCapacity(toBeAdded)                       => {
-      log.info(s"Capacity increased with $toBeAdded")
-      persist(CapacityIncreased(toBeAdded))(evt => updateState(evt))
+      persist(CapacityIncreased(toBeAdded)){
+        println(s"Capacity increased with $toBeAdded")
+        evt => updateState(evt)
+        sender() ! evt
+      }
     }
     
       
