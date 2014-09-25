@@ -41,7 +41,9 @@ class ConcertActor(id: String) extends PersistentActor with ActorLogging {
   def persistenceId = "Concert." + id
   
   var state: Option[ConcertState] = None
+  
   def updateState(evt: ConcertEvent) = state = state.map(_.updated(evt))
+  
   def setInitialState(evt: ConcertCreated) = {
     state = Some(ConcertState(evt.price, evt.available, evt.startTime))
     context.become(receiveCommands)

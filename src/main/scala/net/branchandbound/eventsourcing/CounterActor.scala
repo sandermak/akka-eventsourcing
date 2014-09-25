@@ -22,7 +22,7 @@ class CounterActor extends PersistentActor {
   }
 
   val receiveRecover: Receive = {
-    case Increment => state += 1
+    case Incremented => state += 1
   }
 }
 
@@ -40,7 +40,7 @@ class SnapshottingCounterActor extends PersistentActor {
   }
 
   val receiveRecover: Receive = {
-    case Increment => state += 1
+    case Incremented => state += 1
     case SnapshotOffer(_, snapshotState: Int) => state = snapshotState
   }
 }
